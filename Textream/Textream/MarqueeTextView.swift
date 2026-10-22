@@ -599,17 +599,22 @@ struct WordFlowLayout: View {
     }
 
     // Simple layout cache to avoid re-measuring words on every highlight update
-    private static var _cacheKey: String = ""
+    private struct LayoutCacheKey: Equatable {
+        let words: [String]
+        let font: NSFont
+        let containerWidth: CGFloat
+        let paragraphBreaks: Set<Int>
+    }
+
+    private static var _cacheKey: LayoutCacheKey?
     private static var _cachedItems: [WordItem] = []
     private static var _cachedLines: [[WordItem]] = []
     private static var _cachedParagraphPrefixCounts: [Int] = []
 
     private func cachedLayout() -> ([WordItem], [[WordItem]], [Int]) {
-        let paragraphKey = paragraphBreakBeforeWordIndices.sorted()
-            .map(String.init)
-            .joined(separator: ",")
-        let key = "\(words.count)|\(words.first ?? "")|\(words.last ?? "")|"
-            + "\(font.fontName)|\(font.pointSize)|\(Int(containerWidth))|\(paragraphKey)"
+        let key = LayoutCacheKey(words: words, font: font,
+                                 containerWidth: containerWidth,
+                                 paragraphBreaks: paragraphBreakBeforeWordIndices)
         if key == Self._cacheKey {
             return (Self._cachedItems, Self._cachedLines, Self._cachedParagraphPrefixCounts)
         }

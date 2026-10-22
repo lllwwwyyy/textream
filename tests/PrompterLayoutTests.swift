@@ -87,6 +87,23 @@ struct PrompterLayoutTests {
         let (_, longLines, _) = WordFlowLayout(words: words, highlightedCharCount: 0,
             font: fonts[1], containerWidth: 246).layoutForTest()
         check(longLines.contains { $0.map(\.word) == [longNumber] }, "overlong number did not get its own row")
+
+        let first = WordFlowLayout(words: ["中", "旧", "文"], highlightedCharCount: 0,
+                                   font: fonts[1], containerWidth: 246).layoutForTest()
+        let edited = WordFlowLayout(words: ["中", "新", "文"], highlightedCharCount: 0,
+                                    font: fonts[1], containerWidth: 246).layoutForTest()
+        check(first.0[1].word == "旧", "initial script not laid out")
+        check(edited.0[1].word == "新", "same-length middle edit reused stale words")
+        let paragraph = WordFlowLayout(words: ["中", "新", "文"], highlightedCharCount: 0,
+            font: fonts[1], paragraphBreakBeforeWordIndices: [1], containerWidth: 246)
+            .layoutForTest()
+        check(paragraph.1.count == 2, "paragraph edit reused stale lines")
+        check(paragraph.2.last == 1, "paragraph metadata not updated")
+        let highlighted = WordFlowLayout(words: ["中", "新", "文"], highlightedCharCount: 2,
+            font: fonts[1], paragraphBreakBeforeWordIndices: [1], containerWidth: 246)
+            .layoutForTest()
+        check(highlighted.1.map { $0.map(\.word) } == paragraph.1.map { $0.map(\.word) },
+              "highlight-only update changed line layout")
         print("\(checks) checks; \(failures) failures")
         if failures > 0 { exit(1) }
     }
